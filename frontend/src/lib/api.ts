@@ -1,10 +1,17 @@
 import axios, { type AxiosError } from 'axios';
+import type { User } from '../types/auth';
 
 const baseURL = import.meta.env.VITE_API_URL;
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+}
+
+let onUserRefreshed: ((user: User) => void) | null = null;
+
+export function setOnUserRefreshed(callback: ((user: User) => void) | null) {
+  onUserRefreshed = callback;
 }
 
 export const api = axios.create({
@@ -31,8 +38,9 @@ async function getFreshAccessToken(
   }
 
   refreshInFlight ??= api.post('/auth/refresh').then((res) => {
-    const token: string = res.data.data.accessToken;
+    const { accessToken: token, user } = res.data.data;
     setAccessToken(token);
+    onUserRefreshed?.(user);
     return token;
   });
 

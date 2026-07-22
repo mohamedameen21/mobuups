@@ -26,7 +26,7 @@ export function LoginPage() {
         <CardContent>
           <LoginForm />
         </CardContent>
-        <CardFooter className="justify-center">
+        <CardFooter className="flex-col gap-2">
           <p className="text-sm text-muted-foreground">
             No account?{' '}
             <Link
@@ -35,6 +35,10 @@ export function LoginPage() {
             >
               Sign up
             </Link>
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Demo user: <span className="font-medium text-foreground">demouser@gmail.com</span> /{' '}
+            <span className="font-medium text-foreground">password</span>
           </p>
         </CardFooter>
       </Card>

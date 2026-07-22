@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, setAccessToken } from '../lib/api';
+import { api, setAccessToken, setOnUserRefreshed } from '../lib/api';
 import type { AuthResponse, LoginInput, RegisterInput, User } from '../types/auth';
 
 interface AuthContextValue {
@@ -17,6 +17,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    setOnUserRefreshed(setUser);
+    return () => setOnUserRefreshed(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

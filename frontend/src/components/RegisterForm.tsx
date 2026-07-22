@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '../context/AuthContext';
 
@@ -62,12 +63,7 @@ export function RegisterForm() {
 
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="new-password"
-          {...register('password')}
-        />
+        <PasswordInput id="password" autoComplete="new-password" {...register('password')} />
         {errors.password && (
           <p role="alert" className="text-sm text-destructive">
             {errors.password.message}
