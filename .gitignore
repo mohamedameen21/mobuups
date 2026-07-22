@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+
+# personal planning notes, not part of the deliverable
+IMPLEMENTATION_PLAN.md
