@@ -21,4 +21,13 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // shadcn/ui primitives conventionally export a component alongside a
+    // cva() variants helper (e.g. Button + buttonVariants) from the same
+    // file - that's the upstream pattern, not something to fix per-file.
+    files: ['src/components/ui/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ]);
