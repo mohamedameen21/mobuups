@@ -10,6 +10,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit && tsc --noEmit -p prisma/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -36,13 +39,17 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.0.0",
     "@types/pg": "^8.20.0",
+    "@types/supertest": "^7.2.1",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.1.0",
     "globals": "^15.0.0",
     "prettier": "^3.4.0",
     "prisma": "^7.9.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "typescript-eslint": "^8.0.0"
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^4.1.10"
   }
 }
