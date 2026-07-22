@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { api, setAccessToken } from '../lib/api';
 import type { AuthResponse, LoginInput, RegisterInput, User } from '../types/auth';
 
 interface AuthContextValue {
   user: User | null;
   isAuthenticating: boolean;
+  isInitializing: boolean;
   login: (input: LoginInput) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
@@ -15,6 +16,29 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .post<{ data: AuthResponse }>('/auth/refresh')
+      .then((res) => {
+        if (cancelled) return;
+        setAccessToken(res.data.data.accessToken);
+        setUser(res.data.data.user);
+      })
+      .catch(() => {
+        // No valid refresh cookie yet (first visit, expired session, etc.) - stay signed out
+      })
+      .finally(() => {
+        if (!cancelled) setIsInitializing(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function login(input: LoginInput) {
     setIsAuthenticating(true);
@@ -39,13 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await api.post('/auth/logout');
-    setAccessToken(null);
-    setUser(null);
+    try {
+      await api.post('/auth/logout');
+    } finally {
+      setAccessToken(null);
+      setUser(null);
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticating, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticating, isInitializing, login, register, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

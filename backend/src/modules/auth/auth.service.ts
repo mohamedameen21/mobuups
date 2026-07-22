@@ -1,3 +1,4 @@
+import { randomBytes, createHash } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma.js';
@@ -5,14 +6,11 @@ import { AppError } from '../../lib/errors.js';
 import type { LoginInput, RegisterInput } from './auth.schema.js';
 
 const SALT_ROUNDS = 12;
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface AccessTokenPayload {
   sub: string;
   email: string;
-}
-
-interface RefreshTokenPayload {
-  sub: string;
 }
 
 interface UserRecord {
@@ -32,21 +30,23 @@ function signAccessToken(payload: AccessTokenPayload): string {
   });
 }
 
-function signRefreshToken(payload: RefreshTokenPayload): string {
-  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET!, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES as jwt.SignOptions['expiresIn'],
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+async function issueTokens(user: UserRecord) {
+  const accessToken = signAccessToken({ sub: user.id, email: user.email });
+
+  const refreshToken = randomBytes(48).toString('base64url');
+  await prisma.refreshToken.create({
+    data: {
+      tokenHash: hashToken(refreshToken),
+      userId: user.id,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    },
   });
-}
 
-function verifyRefreshToken(token: string): RefreshTokenPayload {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as RefreshTokenPayload;
-}
-
-function issueTokens(user: UserRecord) {
-  return {
-    accessToken: signAccessToken({ sub: user.id, email: user.email }),
-    refreshToken: signRefreshToken({ sub: user.id }),
-  };
+  return { accessToken, refreshToken };
 }
 
 export async function registerUser(input: RegisterInput) {
@@ -60,7 +60,7 @@ export async function registerUser(input: RegisterInput) {
     data: { name: input.name, email: input.email, passwordHash },
   });
 
-  return { user: toPublicUser(user), ...issueTokens(user) };
+  return { user: toPublicUser(user), ...(await issueTokens(user)) };
 }
 
 export async function loginUser(input: LoginInput) {
@@ -69,7 +69,7 @@ export async function loginUser(input: LoginInput) {
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Incorrect email or password.');
   }
 
-  return { user: toPublicUser(user), ...issueTokens(user) };
+  return { user: toPublicUser(user), ...(await issueTokens(user)) };
 }
 
 export async function refreshSession(refreshToken: string | undefined) {
@@ -77,17 +77,27 @@ export async function refreshSession(refreshToken: string | undefined) {
     throw new AppError(401, 'NO_REFRESH_TOKEN', 'No refresh token provided.');
   }
 
-  let payload: RefreshTokenPayload;
-  try {
-    payload = verifyRefreshToken(refreshToken);
-  } catch {
+  const tokenHash = hashToken(refreshToken);
+  const stored = await prisma.refreshToken.findUnique({
+    where: { tokenHash },
+    include: { user: true },
+  });
+
+  if (!stored) {
     throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
   }
 
-  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
-  if (!user) {
+  // Single-use: this token is spent whether it turns out expired or valid.
+  await prisma.refreshToken.delete({ where: { id: stored.id } });
+
+  if (stored.expiresAt < new Date()) {
     throw new AppError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
   }
 
-  return { user: toPublicUser(user), ...issueTokens(user) };
+  return { user: toPublicUser(stored.user), ...(await issueTokens(stored.user)) };
+}
+
+export async function revokeRefreshToken(refreshToken: string | undefined) {
+  if (!refreshToken) return;
+  await prisma.refreshToken.deleteMany({ where: { tokenHash: hashToken(refreshToken) } });
 }

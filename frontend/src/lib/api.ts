@@ -47,7 +47,8 @@ async function retryAPI(error: AxiosError) {
   const original = error.config as (typeof error)['config'] & { hasAlreadyRetried?: boolean };
 
   const tokenExpired = error.response?.status === 401;
-  const eligibleForRetry = tokenExpired && !original.hasAlreadyRetried;
+  const isRefreshCall = original.url === '/auth/refresh';
+  const eligibleForRetry = tokenExpired && !original.hasAlreadyRetried && !isRefreshCall;
 
   if (!eligibleForRetry) {
     return Promise.reject(error);

@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express';
 import { registerSchema, loginSchema } from './auth.schema.js';
-import { registerUser, loginUser, refreshSession } from './auth.service.js';
+import { registerUser, loginUser, refreshSession, revokeRefreshToken } from './auth.service.js';
 import { sendSuccess } from '../../lib/response.js';
 
 const REFRESH_COOKIE_NAME = 'refreshToken';
-const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // keep in sync with JWT_REFRESH_EXPIRES
+const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // keep in sync with REFRESH_TOKEN_TTL_MS in auth.service.ts
 
 function setRefreshCookie(res: Response, token: string) {
   res.cookie(REFRESH_COOKIE_NAME, token, {
@@ -41,7 +41,9 @@ export async function refresh(req: Request, res: Response) {
   sendSuccess(res, 200, { user, accessToken });
 }
 
-export function logout(_req: Request, res: Response) {
+export async function logout(req: Request, res: Response) {
+  const incomingToken = req.cookies[REFRESH_COOKIE_NAME] as string | undefined;
+  await revokeRefreshToken(incomingToken);
   clearRefreshCookie(res);
   sendSuccess(res, 200, null);
 }

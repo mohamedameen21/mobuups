@@ -33,6 +33,10 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     sendError(res, 400, 'VALIDATION_ERROR', err.issues[0]?.message ?? 'Invalid input.');
     return;
   }
+  if (err instanceof SyntaxError && 'status' in err && err.status === 400) {
+    sendError(res, 400, 'INVALID_JSON', 'Request body must be valid JSON.');
+    return;
+  }
   console.error(err);
   sendError(res, 500, 'INTERNAL_ERROR', 'Something went wrong.');
 });
