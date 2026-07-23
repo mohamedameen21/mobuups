@@ -26,6 +26,10 @@ RUN npm ci
 COPY . .
 
 # Generate Prisma Client
+# Prisma config validates DATABASE_URL even though client generation does not
+# connect to the database. This build-only placeholder is overridden by the
+# Compose runtime DATABASE_URL.
+ENV DATABASE_URL=postgresql://prisma:prisma@localhost:5432/prisma?schema=public
 RUN npx prisma generate
 
 # Build TypeScript to dist/
