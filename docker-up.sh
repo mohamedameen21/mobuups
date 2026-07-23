@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+# Usage:
+#   ./docker-up.sh                 # rebuild + start all services
+#   ./docker-up.sh frontend        # rebuild + start only the frontend
+#   ./docker-up.sh frontend -d     # rebuild + start frontend in background
+#   ./docker-up.sh --no-cache frontend   # force a full no-cache rebuild
+#
+# Any unknown args (-d, --no-cache, service names) are passed straight to
+# `docker compose up --build`, so you can use the full compose CLI surface.
+
 # Auto-detect host User ID and Group ID
 HOST_UID=$(id -u)
 HOST_GID=$(id -g)
@@ -27,5 +36,5 @@ else
 fi
 
 echo "Configured .env with PUID=${HOST_UID} and PGID=${HOST_GID}."
-echo "Starting Docker Compose..."
+echo "Starting Docker Compose (with --build so source changes are picked up)..."
 exec docker compose up --build "$@"
