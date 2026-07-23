@@ -2,5 +2,9 @@ node_modules/
 dist/
 .env
 *.log
+logs/
 src/generated/
 coverage/
+uploads/*
+!uploads/.gitkeep
+
