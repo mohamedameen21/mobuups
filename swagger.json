@@ -1,0 +1,276 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Product Store REST API",
+    "description": "FullStack Developer Test Assignment REST API documentation for product management, JWT/cookie authentication, pagination, and media file uploads.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Product Store Developer API"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "User registration, login, token refresh, and logout" },
+    { "name": "Products", "description": "Product catalog CRUD operations, filtering, search, and pagination" },
+    { "name": "Uploads", "description": "Local image file uploads" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Pass your JWT access token in the Authorization header as: Bearer <token>"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "refreshToken",
+        "description": "httpOnly refresh token cookie issued upon login/registration."
+      },
+      "headerRefreshAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-refresh-token",
+        "description": "Refresh token header for Flutter / Mobile apps."
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "d015b678-8316-47eb-94bb-4e9dfd0e5ecf" },
+          "name": { "type": "string", "example": "Demo User" },
+          "email": { "type": "string", "format": "email", "example": "demouser@gmail.com" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "example": "966103a8-80b5-4b54-8492-2b73b8727980" },
+          "name": { "type": "string", "example": "Wireless Over-Ear Headphones" },
+          "description": { "type": "string", "nullable": true, "example": "Ergonomic high-fidelity headphones" },
+          "price": { "type": "number", "example": 494.69 },
+          "stock": { "type": "integer", "example": 52 },
+          "category": { "type": "string", "example": "electronics" },
+          "imageUrl": { "type": "string", "nullable": true, "example": "/uploads/seed-photo-1505740420928-5e560c06d30e.jpg" },
+          "createdAt": { "type": "string", "format": "date-time", "example": "2026-07-23T05:40:53.794Z" },
+          "updatedAt": { "type": "string", "format": "date-time", "example": "2026-07-23T05:40:53.794Z" }
+        }
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 6 },
+          "total": { "type": "integer", "example": 22 },
+          "totalPages": { "type": "integer", "example": 4 }
+        }
+      },
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": { "type": "object", "nullable": true },
+          "meta": { "type": "object", "nullable": true },
+          "error": { "type": "object", "nullable": true }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new user account",
+        "description": "Registers a new user, sets an httpOnly refresh cookie, and returns an access token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "Jane Doe" },
+                  "email": { "type": "string", "format": "email", "example": "jane@example.com" },
+                  "password": { "type": "string", "minLength": 8, "example": "password123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiResponse" }
+              }
+            }
+          },
+          "409": { "description": "Email already registered" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log in with email and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "demouser@gmail.com" },
+                  "password": { "type": "string", "example": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Refresh access token",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Access token refreshed" },
+          "401": { "description": "Invalid or missing refresh cookie" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log out and clear refresh session",
+        "responses": {
+          "200": { "description": "Logged out successfully" }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List paginated products",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "sortBy", "in": "query", "schema": { "type": "string", "default": "createdAt" } },
+          { "name": "order", "in": "query", "schema": { "type": "string", "enum": ["asc", "desc"], "default": "desc" } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated list of products" }
+        }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Create a product",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "price", "stock", "category"],
+                "properties": {
+                  "name": { "type": "string", "example": "4K Smart Monitor" },
+                  "description": { "type": "string", "example": "27-inch 4K IPS Display" },
+                  "price": { "type": "number", "example": 399.99 },
+                  "stock": { "type": "integer", "example": 20 },
+                  "category": { "type": "string", "example": "electronics" },
+                  "imageUrl": { "type": "string", "example": "/uploads/monitor.jpg" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Product created" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Product details" },
+          "404": { "description": "Product not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Product updated" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Product not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete product",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Product deleted" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/upload": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Upload image file",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image"],
+                "properties": {
+                  "image": { "type": "string", "format": "binary", "description": "Image file (JPG, PNG, WEBP, GIF, SVG, max 5MB)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Image uploaded successfully" },
+          "400": { "description": "Invalid file type or size" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  }
+}

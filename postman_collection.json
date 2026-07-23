@@ -1,0 +1,379 @@
+{
+  "info": {
+    "_postman_id": "product-store-api-collection",
+    "name": "Product Store REST API",
+    "description": "Comprehensive Postman Collection for the FullStack Developer Test Assignment Product Store REST API. Includes Authentication, Products CRUD, Pagination, and File Uploads.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Registers a new user account, sets an httpOnly refresh cookie (~7d), and returns a short-lived access JWT (~15m)."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"c1a2b3c4-d5e6-7f8a-9b0c-1d2e3f4a5b6c\",\n      \"name\": \"Test User\",\n      \"email\": \"testuser@example.com\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"TbZH8mowFGskqeS0d2od3QMpj0Eze6zk-xmPIDvB60R15AQ7FOfiHQyCtqqRe85o\"\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demouser@gmail.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticates a user with email and password, setting an httpOnly refresh cookie and returning an access token."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"d015b678-8316-47eb-94bb-4e9dfd0e5ecf\",\n      \"name\": \"Demo User\",\n      \"email\": \"demouser@gmail.com\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Access Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Rotates the single-use refresh token cookie and issues a fresh JWT access token."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"id\": \"d015b678-8316-47eb-94bb-4e9dfd0e5ecf\",\n      \"name\": \"Demo User\",\n      \"email\": \"demouser@gmail.com\"\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Revokes the refresh token stored in the database and clears the refresh cookie."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": null,\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=6&search=&category=&sortBy=createdAt&order=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "6",
+                  "description": "Items per page (default 10, max 100)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Case-insensitive name search"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "Exact category filter (e.g. electronics)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort by (createdAt, price, name, stock)"
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "Sort direction (asc, desc)"
+                }
+              ]
+            },
+            "description": "Fetches a paginated list of products with optional search, category filter, and sorting. Public access."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"products\": [\n      {\n        \"id\": \"966103a8-80b5-4b54-8492-2b73b8727980\",\n        \"name\": \"Wireless Over-Ear Headphones\",\n        \"description\": \"Ergonomic high-fidelity headphones with active noise cancellation\",\n        \"price\": 494.69,\n        \"stock\": 52,\n        \"category\": \"electronics\",\n        \"imageUrl\": \"/uploads/seed-photo-1505740420928-5e560c06d30e.jpg\",\n        \"createdAt\": \"2026-07-23T05:40:53.794Z\",\n        \"updatedAt\": \"2026-07-23T05:40:53.794Z\"\n      }\n    ],\n    \"meta\": {\n      \"page\": 1,\n      \"limit\": 6,\n      \"total\": 22,\n      \"totalPages\": 4\n    }\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Product By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "966103a8-80b5-4b54-8492-2b73b8727980",
+                  "description": "Product UUID"
+                }
+              ]
+            },
+            "description": "Retrieves details of a single product by UUID. Public access."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"966103a8-80b5-4b54-8492-2b73b8727980\",\n    \"name\": \"Wireless Over-Ear Headphones\",\n    \"description\": \"Ergonomic high-fidelity headphones with active noise cancellation\",\n    \"price\": 494.69,\n    \"stock\": 52,\n    \"category\": \"electronics\",\n    \"imageUrl\": \"/uploads/seed-photo-1505740420928-5e560c06d30e.jpg\",\n    \"createdAt\": \"2026-07-23T05:40:53.794Z\",\n    \"updatedAt\": \"2026-07-23T05:40:53.794Z\"\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Smart Fitness Tracker\",\n  \"description\": \"Water-resistant fitness tracker with heart rate monitor and GPS\",\n  \"price\": 129.99,\n  \"stock\": 45,\n  \"category\": \"sports & fitness\",\n  \"imageUrl\": \"/uploads/sample-tracker.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Creates a new product in the store catalog. Requires JWT access token."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"f7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d\",\n    \"name\": \"Smart Fitness Tracker\",\n    \"description\": \"Water-resistant fitness tracker with heart rate monitor and GPS\",\n    \"price\": 129.99,\n    \"stock\": 45,\n    \"category\": \"sports & fitness\",\n    \"imageUrl\": \"/uploads/sample-tracker.jpg\",\n    \"createdAt\": \"2026-07-23T11:45:00.000Z\",\n    \"updatedAt\": \"2026-07-23T11:45:00.000Z\"\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 119.99,\n  \"stock\": 50\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d"
+                }
+              ]
+            },
+            "description": "Partially updates an existing product's details by UUID. Requires JWT access token."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"f7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d\",\n    \"name\": \"Smart Fitness Tracker\",\n    \"description\": \"Water-resistant fitness tracker with heart rate monitor and GPS\",\n    \"price\": 119.99,\n    \"stock\": 50,\n    \"category\": \"sports & fitness\",\n    \"imageUrl\": \"/uploads/sample-tracker.jpg\",\n    \"createdAt\": \"2026-07-23T11:45:00.000Z\",\n    \"updatedAt\": \"2026-07-23T11:46:00.000Z\"\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "f7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d"
+                }
+              ]
+            },
+            "description": "Permanently deletes a product from the database. Requires JWT access token."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"data\": null,\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "File Uploads",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["upload"]
+            },
+            "description": "Uploads an image file (JPG, PNG, WEBP, GIF, SVG) up to 5MB, saving it to backend/uploads and returning a relative static URL. Requires JWT access token."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"/uploads/1721735000000-a1b2c3d4e5f67890.jpg\",\n    \"filename\": \"1721735000000-a1b2c3d4e5f67890.jpg\",\n    \"size\": 108533\n  },\n  \"meta\": null,\n  \"error\": null\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

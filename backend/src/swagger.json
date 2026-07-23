@@ -1,0 +1,149 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Product Store REST API",
+    "description": "FullStack Developer Test Assignment REST API documentation for product management, JWT/cookie authentication, pagination, and media file uploads.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/api",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "User registration, login, token refresh, and logout" },
+    { "name": "Products", "description": "Product catalog CRUD operations, filtering, search, and pagination" },
+    { "name": "Uploads", "description": "Local image file uploads" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "refreshToken"
+      },
+      "headerRefreshAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-refresh-token"
+      }
+    }
+  },
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new user account",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "Jane Doe" },
+                  "email": { "type": "string", "format": "email", "example": "jane@example.com" },
+                  "password": { "type": "string", "example": "password123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "User registered, returns accessToken + refreshToken in JSON and cookie" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log in with email and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "demouser@gmail.com" },
+                  "password": { "type": "string", "example": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Login successful, returns accessToken + refreshToken in JSON and cookie" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Refresh access token",
+        "security": [{ "cookieAuth": [] }, { "headerRefreshAuth": [] }],
+        "responses": { "200": { "description": "Access token refreshed, returns new accessToken + refreshToken in JSON and cookie" } }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log out user",
+        "responses": { "200": { "description": "Logged out" } }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "List products",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Products list" } }
+      },
+      "post": {
+        "tags": ["Products"],
+        "summary": "Create product",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Product created" } }
+      }
+    },
+    "/products/{id}": {
+      "get": {
+        "tags": ["Products"],
+        "summary": "Get product by ID",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Product details" } }
+      },
+      "patch": {
+        "tags": ["Products"],
+        "summary": "Update product",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Product updated" } }
+      },
+      "delete": {
+        "tags": ["Products"],
+        "summary": "Delete product",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Product deleted" } }
+      }
+    },
+    "/upload": {
+      "post": {
+        "tags": ["Uploads"],
+        "summary": "Upload image file",
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "Image uploaded" } }
+      }
+    }
+  }
+}
