@@ -7,8 +7,8 @@
   },
   "servers": [
     {
-      "url": "http://localhost:4000/api",
-      "description": "Local Development Server"
+      "url": "/api",
+      "description": "Current server"
     }
   ],
   "tags": [
