@@ -7,8 +7,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgrespassword}
       POSTGRES_DB: ${POSTGRES_DB:-mobupps_db}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    # Postgres is intentionally private to the Compose network. The backend
+    # reaches it through `db:5432`; publishing it would expose the database.
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
