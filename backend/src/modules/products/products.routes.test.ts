@@ -116,7 +116,7 @@ describe('POST /api/products', () => {
 });
 
 describe('GET /api/products', () => {
-  async function seed() {
+  async function seed(): Promise<string> {
     const token = await getAccessToken();
     const products = [
       { ...validProduct, name: 'Wireless Mouse', category: 'electronics', price: 29.99 },
@@ -129,56 +129,72 @@ describe('GET /api/products', () => {
         .set('Authorization', `Bearer ${token}`)
         .send(product);
     }
+    return token;
   }
 
-  it('lists products without requiring authentication', async () => {
-    await seed();
-
+  it('rejects with 401 when no Authorization header is present', async () => {
     const res = await request(app).get('/api/products');
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('lists products for an authenticated user', async () => {
+    const token = await seed();
+
+    const res = await request(app).get('/api/products').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.products).toHaveLength(3);
   });
 
   it('returns pagination metadata with sensible defaults', async () => {
-    await seed();
+    const token = await seed();
 
-    const res = await request(app).get('/api/products');
+    const res = await request(app).get('/api/products').set('Authorization', `Bearer ${token}`);
 
     expect(res.body.data.meta).toEqual({ page: 1, limit: 10, total: 3, totalPages: 1 });
   });
 
   it('paginates with custom page and limit', async () => {
-    await seed();
+    const token = await seed();
 
-    const res = await request(app).get('/api/products?page=2&limit=2');
+    const res = await request(app)
+      .get('/api/products?page=2&limit=2')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.body.data.products).toHaveLength(1);
     expect(res.body.data.meta).toEqual({ page: 2, limit: 2, total: 3, totalPages: 2 });
   });
 
   it('filters by category', async () => {
-    await seed();
+    const token = await seed();
 
-    const res = await request(app).get('/api/products?category=fitness');
+    const res = await request(app)
+      .get('/api/products?category=fitness')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.body.data.products).toHaveLength(1);
     expect(res.body.data.products[0].name).toBe('Yoga Mat');
   });
 
   it('searches by name, case-insensitively', async () => {
-    await seed();
+    const token = await seed();
 
-    const res = await request(app).get('/api/products?search=KEYBOARD');
+    const res = await request(app)
+      .get('/api/products?search=KEYBOARD')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.body.data.products).toHaveLength(1);
     expect(res.body.data.products[0].name).toBe('Mechanical Keyboard');
   });
 
   it('sorts by price ascending', async () => {
-    await seed();
+    const token = await seed();
 
-    const res = await request(app).get('/api/products?sortBy=price&order=asc');
+    const res = await request(app)
+      .get('/api/products?sortBy=price&order=asc')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.body.data.products.map((p: { name: string }) => p.name)).toEqual([
       'Yoga Mat',
@@ -188,50 +204,77 @@ describe('GET /api/products', () => {
   });
 
   it('returns an empty page with correct totals when nothing matches', async () => {
-    await seed();
+    const token = await seed();
 
-    const res = await request(app).get('/api/products?category=nonexistent');
+    const res = await request(app)
+      .get('/api/products?category=nonexistent')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.body.data.products).toEqual([]);
     expect(res.body.data.meta).toEqual({ page: 1, limit: 10, total: 0, totalPages: 1 });
   });
 
   it('rejects an out-of-range limit', async () => {
-    const res = await request(app).get('/api/products?limit=1000');
+    const token = await getAccessToken();
+
+    const res = await request(app)
+      .get('/api/products?limit=1000')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(400);
   });
 
   it('rejects a non-positive page', async () => {
-    const res = await request(app).get('/api/products?page=0');
+    const token = await getAccessToken();
+
+    const res = await request(app)
+      .get('/api/products?page=0')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(400);
   });
 });
 
 describe('GET /api/products/:id', () => {
-  it('returns a single product by id without authentication', async () => {
+  it('rejects with 401 when no Authorization header is present', async () => {
+    const res = await request(app).get('/api/products/00000000-0000-0000-0000-000000000000');
+
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+  });
+
+  it('returns a single product by id for an authenticated user', async () => {
     const token = await getAccessToken();
     const created = await request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${token}`)
       .send(validProduct);
 
-    const res = await request(app).get(`/api/products/${created.body.data.id}`);
+    const res = await request(app)
+      .get(`/api/products/${created.body.data.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body.data.name).toBe('Wireless Mouse');
   });
 
   it('returns 404 for a well-formed id that does not exist', async () => {
-    const res = await request(app).get('/api/products/00000000-0000-0000-0000-000000000000');
+    const token = await getAccessToken();
+
+    const res = await request(app)
+      .get('/api/products/00000000-0000-0000-0000-000000000000')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('PRODUCT_NOT_FOUND');
   });
 
   it('returns 400 for a malformed id', async () => {
-    const res = await request(app).get('/api/products/not-a-uuid');
+    const token = await getAccessToken();
+
+    const res = await request(app)
+      .get('/api/products/not-a-uuid')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(400);
   });
@@ -310,7 +353,9 @@ describe('DELETE /api/products/:id', () => {
 
     expect(deleteRes.status).toBe(200);
 
-    const getRes = await request(app).get(`/api/products/${created.body.data.id}`);
+    const getRes = await request(app)
+      .get(`/api/products/${created.body.data.id}`)
+      .set('Authorization', `Bearer ${token}`);
     expect(getRes.status).toBe(404);
   });
 

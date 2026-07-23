@@ -24,6 +24,20 @@ describe('GET /', () => {
   });
 });
 
+describe('unknown routes', () => {
+  it('returns a JSON 404 in the standard error envelope', async () => {
+    const res = await request(app).get('/api/does-not-exist');
+
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({
+      success: false,
+      data: null,
+      meta: null,
+      error: { code: 'NOT_FOUND' },
+    });
+  });
+});
+
 describe('error middleware fallback', () => {
   it('returns a generic 500 for an unexpected (non-AppError) error', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

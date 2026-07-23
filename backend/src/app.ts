@@ -21,7 +21,10 @@ const swaggerSpec = JSON.parse(
 // Swagger UI's generated init file embeds the API specification. Give that
 // file a content-based URL so a proxy/CDN cannot keep serving an older spec
 // after a deployment.
-const swaggerSpecVersion = createHash('sha256').update(JSON.stringify(swaggerSpec)).digest('hex').slice(0, 12);
+const swaggerSpecVersion = createHash('sha256')
+  .update(JSON.stringify(swaggerSpec))
+  .digest('hex')
+  .slice(0, 12);
 const swaggerHtml = swaggerUi
   .generateHTML(swaggerSpec)
   .replace('./swagger-ui-init.js', `./swagger-ui-init.js?v=${swaggerSpecVersion}`);
@@ -62,6 +65,12 @@ app.get('/api/swagger.json', (_req, res) => res.json(swaggerSpec));
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/upload', uploadRouter);
+
+// Any unmatched route falls through to a JSON 404 in the standard envelope,
+// instead of Express's default HTML "Cannot GET ..." page.
+app.use((req: Request, res: Response) => {
+  sendError(res, 404, 'NOT_FOUND', `Route ${req.method} ${req.originalUrl} does not exist.`);
+});
 
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {

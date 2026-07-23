@@ -5,10 +5,10 @@ import { asyncHandler } from '../../lib/asyncHandler.js';
 
 export const productsRouter = Router();
 
-// Reads are public (storefront-style browsing); writes require a valid access token.
-productsRouter.get('/', asyncHandler(list));
-productsRouter.get('/:id', asyncHandler(getOne));
+// Every product action requires a valid access token: the assignment asks that
+// only authorized users can view/add/edit/delete products, so reads are gated too.
+productsRouter.get('/', requireAuth, asyncHandler(list));
+productsRouter.get('/:id', requireAuth, asyncHandler(getOne));
 productsRouter.post('/', requireAuth, asyncHandler(create));
 productsRouter.patch('/:id', requireAuth, asyncHandler(update));
 productsRouter.delete('/:id', requireAuth, asyncHandler(remove));
-
