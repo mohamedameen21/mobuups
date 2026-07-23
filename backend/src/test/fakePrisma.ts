@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { vi } from 'vitest';
 
 interface FakeUser {
@@ -17,11 +18,41 @@ interface FakeRefreshToken {
   createdAt: Date;
 }
 
+interface FakeProduct {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  stock: number;
+  category: string;
+  imageUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+type ProductWhere = {
+  category?: string;
+  name?: { contains: string; mode?: 'insensitive' };
+};
+
+function matchesWhere(product: FakeProduct, where: ProductWhere = {}): boolean {
+  if (where.category && product.category !== where.category) return false;
+  if (where.name?.contains) {
+    const insensitive = where.name.mode === 'insensitive';
+    const haystack = insensitive ? product.name.toLowerCase() : product.name;
+    const needle = insensitive ? where.name.contains.toLowerCase() : where.name.contains;
+    if (!haystack.includes(needle)) return false;
+  }
+  return true;
+}
+
 export function createFakePrisma() {
   const users = new Map<string, FakeUser>();
   const refreshTokens = new Map<string, FakeRefreshToken>();
-  let idCounter = 0;
-  const nextId = () => `id-${++idCounter}`;
+  const products = new Map<string, FakeProduct>();
+  // Real IDs, not "id-1"-style counters: products.id goes through z.uuid()
+  // validation in the route params, so the fake has to look like a real UUID.
+  const nextId = () => randomUUID();
 
   const prisma = {
     user: {
@@ -88,6 +119,90 @@ export function createFakePrisma() {
         }
       }),
     },
+    product: {
+      create: vi.fn(
+        async ({
+          data,
+        }: {
+          data: Omit<FakeProduct, 'id' | 'createdAt' | 'updatedAt' | 'description' | 'imageUrl'> &
+            Partial<Pick<FakeProduct, 'description' | 'imageUrl'>>;
+        }) => {
+          const product: FakeProduct = {
+            id: nextId(),
+            description: data.description ?? null,
+            imageUrl: data.imageUrl ?? null,
+            name: data.name,
+            price: data.price,
+            stock: data.stock,
+            category: data.category,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          products.set(product.id, product);
+          return product;
+        }
+      ),
+      findMany: vi.fn(
+        async ({
+          where,
+          orderBy,
+          skip = 0,
+          take,
+        }: {
+          where?: ProductWhere;
+          orderBy?: Partial<Record<keyof FakeProduct, 'asc' | 'desc'>>;
+          skip?: number;
+          take?: number;
+        } = {}) => {
+          let rows = [...products.values()].filter((p) => matchesWhere(p, where));
+
+          const entry =
+            orderBy && (Object.entries(orderBy)[0] as [keyof FakeProduct, 'asc' | 'desc']);
+          if (entry) {
+            const [field, direction] = entry;
+            rows = [...rows].sort((a, b) => {
+              const av = a[field] as string | number | Date;
+              const bv = b[field] as string | number | Date;
+              if (av < bv) return direction === 'asc' ? -1 : 1;
+              if (av > bv) return direction === 'asc' ? 1 : -1;
+              return 0;
+            });
+          }
+
+          return take === undefined ? rows.slice(skip) : rows.slice(skip, skip + take);
+        }
+      ),
+      count: vi.fn(async ({ where }: { where?: ProductWhere } = {}) => {
+        return [...products.values()].filter((p) => matchesWhere(p, where)).length;
+      }),
+      findUnique: vi.fn(
+        async ({ where }: { where: { id: string } }) => products.get(where.id) ?? null
+      ),
+      update: vi.fn(
+        async ({ where, data }: { where: { id: string }; data: Partial<FakeProduct> }) => {
+          const existing = products.get(where.id);
+          if (!existing) throw new Error('Fake Prisma: record not found for update');
+          const updated: FakeProduct = { ...existing, ...data, updatedAt: new Date() };
+          products.set(where.id, updated);
+          return updated;
+        }
+      ),
+      delete: vi.fn(async ({ where }: { where: { id: string } }) => {
+        const existing = products.get(where.id);
+        if (!existing) throw new Error('Fake Prisma: record not found for delete');
+        products.delete(where.id);
+        return existing;
+      }),
+    },
+    $transaction: vi.fn(async (arg: unknown) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      if (typeof arg === 'function') {
+        return (arg as (tx: typeof prisma) => Promise<unknown>)(prisma);
+      }
+      throw new Error('Fake Prisma: unsupported $transaction argument');
+    }),
   };
 
   return {
@@ -95,7 +210,7 @@ export function createFakePrisma() {
     reset() {
       users.clear();
       refreshTokens.clear();
-      idCounter = 0;
+      products.clear();
       vi.clearAllMocks();
     },
     setTokenExpiry(tokenId: string, expiresAt: Date) {
@@ -104,6 +219,9 @@ export function createFakePrisma() {
     },
     getRefreshTokenRows() {
       return [...refreshTokens.values()];
+    },
+    getProductRows() {
+      return [...products.values()];
     },
   };
 }

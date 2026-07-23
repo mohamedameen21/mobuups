@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { createFakePrisma } from './test/fakePrisma.js';
 
 const fake = createFakePrisma();
@@ -7,6 +9,11 @@ const fake = createFakePrisma();
 vi.mock('./lib/prisma.js', () => ({ prisma: fake.prisma }));
 
 const { app } = await import('./app.js');
+
+function readTodayLog(): string {
+  const today = new Date().toISOString().slice(0, 10);
+  return fs.readFileSync(path.join(process.env.LOG_DIR!, `${today}.log`), 'utf-8');
+}
 
 describe('GET /', () => {
   it('returns a health-check payload', async () => {
@@ -29,6 +36,26 @@ describe('error middleware fallback', () => {
     expect(res.status).toBe(500);
     expect(res.body.error.code).toBe('INTERNAL_ERROR');
     expect(consoleSpy).toHaveBeenCalled();
+
+    const logContents = readTodayLog();
+    expect(logContents).toContain('INTERNAL_ERROR');
+    expect(logContents).toContain('boom - unexpected DB failure');
+
+    consoleSpy.mockRestore();
+  });
+
+  it('handles a rejection that is not an Error instance', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fake.prisma.user.findUnique.mockRejectedValueOnce('a plain string rejection, not an Error');
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'whoever@example.com', password: 'password123' });
+
+    expect(res.status).toBe(500);
+
+    const logContents = readTodayLog();
+    expect(logContents).toContain('Unknown error');
 
     consoleSpy.mockRestore();
   });

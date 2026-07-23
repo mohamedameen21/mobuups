@@ -30,12 +30,13 @@ describe('POST /api/auth/register', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.user).toMatchObject({ name: 'Ameen', email: 'ameen@example.com' });
     expect(res.body.data.accessToken).toEqual(expect.any(String));
+    expect(res.body.data.refreshToken).toEqual(expect.any(String));
 
     const setCookie = res.headers['set-cookie']?.[0] ?? '';
     expect(setCookie).toContain('refreshToken=');
     expect(setCookie).toContain('HttpOnly');
-    expect(setCookie).toContain('Path=/api/auth');
-    expect(setCookie).toContain('SameSite=Strict');
+    expect(setCookie).toContain('Path=/');
+    expect(setCookie).toContain('SameSite=Lax');
   });
 
   it('normalizes email to lowercase before storing', async () => {
@@ -168,7 +169,8 @@ describe('POST /api/auth/refresh', () => {
     const res = await request(app).post('/api/auth/refresh');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('NO_REFRESH_TOKEN');
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.message).toBe('You are unauthorized. Please log in.');
   });
 
   it('rejects a garbage/invalid refresh token', async () => {
@@ -177,7 +179,8 @@ describe('POST /api/auth/refresh', () => {
       .set('Cookie', 'refreshToken=not-a-real-token');
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
+    expect(res.body.error.message).toBe('You are unauthorized. Please log in.');
   });
 
   it('issues a new access token and rotates the refresh cookie', async () => {
@@ -190,9 +193,40 @@ describe('POST /api/auth/refresh', () => {
 
     expect(refreshRes.status).toBe(200);
     expect(refreshRes.body.data.accessToken).toEqual(expect.any(String));
+    expect(refreshRes.body.data.refreshToken).toEqual(expect.any(String));
 
     const secondCookie = extractCookie(refreshRes);
     expect(secondCookie).not.toBe(firstCookie);
+  });
+
+  it('refreshes token via x-refresh-token header for mobile apps', async () => {
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Flutter User', email: 'flutter@example.com', password: 'password123' });
+    const refreshToken = registerRes.body.data.refreshToken as string;
+
+    const refreshRes = await request(app)
+      .post('/api/auth/refresh')
+      .set('x-refresh-token', refreshToken);
+
+    expect(refreshRes.status).toBe(200);
+    expect(refreshRes.body.data.accessToken).toEqual(expect.any(String));
+    expect(refreshRes.body.data.refreshToken).toEqual(expect.any(String));
+  });
+
+  it('refreshes token via JSON body for mobile apps', async () => {
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Mobile User', email: 'mobile@example.com', password: 'password123' });
+    const refreshToken = registerRes.body.data.refreshToken as string;
+
+    const refreshRes = await request(app)
+      .post('/api/auth/refresh')
+      .send({ refreshToken });
+
+    expect(refreshRes.status).toBe(200);
+    expect(refreshRes.body.data.accessToken).toEqual(expect.any(String));
+    expect(refreshRes.body.data.refreshToken).toEqual(expect.any(String));
   });
 
   it('rejects reuse of an already-rotated (old) refresh token', async () => {
@@ -206,7 +240,7 @@ describe('POST /api/auth/refresh', () => {
     const reuseRes = await request(app).post('/api/auth/refresh').set('Cookie', firstCookie);
 
     expect(reuseRes.status).toBe(401);
-    expect(reuseRes.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+    expect(reuseRes.body.error.code).toBe('UNAUTHORIZED');
   });
 
   it('rejects an expired refresh token', async () => {
@@ -221,7 +255,7 @@ describe('POST /api/auth/refresh', () => {
     const res = await request(app).post('/api/auth/refresh').set('Cookie', firstCookie);
 
     expect(res.status).toBe(401);
-    expect(res.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+    expect(res.body.error.code).toBe('UNAUTHORIZED');
   });
 });
 
@@ -242,7 +276,7 @@ describe('POST /api/auth/logout', () => {
 
     const refreshRes = await request(app).post('/api/auth/refresh').set('Cookie', cookie);
     expect(refreshRes.status).toBe(401);
-    expect(refreshRes.body.error.code).toBe('INVALID_REFRESH_TOKEN');
+    expect(refreshRes.body.error.code).toBe('UNAUTHORIZED');
   });
 
   it('succeeds even with no cookie at all (idempotent)', async () => {
