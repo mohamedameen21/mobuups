@@ -1,14 +1,17 @@
 FROM node:20-alpine
 
-# Install netcat for DB readiness check and shadow for user/group management
+# Install netcat for DB readiness check and shadow/su-exec for permission management
 RUN apk add --no-cache netcat-openbsd shadow su-exec
 
 ARG PUID=1000
 ARG PGID=1000
 
-# Configure custom user and group matching host UID/GID
-RUN getent group ${PGID} || addgroup -g ${PGID} appgroup && \
-    getent passwd ${PUID} || adduser -D -u ${PUID} -G appgroup appuser
+# Dynamically handle existing host GID/UID (such as GID 20 dialout on Alpine)
+RUN EXISTING_GROUP=$(getent group ${PGID} | cut -d: -f1) && \
+    if [ -z "$EXISTING_GROUP" ]; then \
+      addgroup -g ${PGID} appgroup && EXISTING_GROUP=appgroup; \
+    fi && \
+    getent passwd ${PUID} >/dev/null || adduser -D -u ${PUID} -G "$EXISTING_GROUP" appuser
 
 WORKDIR /app
 
@@ -28,10 +31,10 @@ RUN npx prisma generate
 # Build TypeScript to dist/
 RUN npm run build
 
-# Ensure entrypoint is executable and set directory permissions
+# Ensure entrypoint is executable and uploads directory is writable
 RUN chmod +x docker-entrypoint.sh && \
     mkdir -p /app/uploads && \
-    chown -R ${PUID}:${PGID} /app /app/uploads
+    chown -R ${PUID}:${PGID} /app /app/uploads || chmod 777 /app/uploads
 
 EXPOSE 4000
 
