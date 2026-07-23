@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ProductForm } from './ProductForm';
+import { api } from '../lib/api';
 
 const baseProps = {
   submitLabel: 'Add product',
@@ -143,5 +144,51 @@ describe('ProductForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add product' }));
 
     expect(await screen.findByText('Something specific went wrong.')).toBeInTheDocument();
+  });
+
+  it('does not render an image preview when there is no imageUrl', () => {
+    render(<ProductForm onSubmit={vi.fn()} {...baseProps} />);
+
+    expect(screen.queryByRole('img', { name: /product image preview/i })).not.toBeInTheDocument();
+  });
+
+  it('renders an image preview when editing a product with an existing imageUrl', () => {
+    render(
+      <ProductForm
+        onSubmit={vi.fn()}
+        initialValues={{
+          name: 'Cake',
+          price: 10,
+          stock: 1,
+          category: 'cakes & bakery',
+          imageUrl: '/uploads/existing-cake.jpg',
+        }}
+        {...baseProps}
+      />
+    );
+
+    const preview = screen.getByRole('img', { name: /product image preview/i });
+    expect(preview).toBeInTheDocument();
+    expect(preview).toHaveAttribute('src', '/uploads/existing-cake.jpg');
+  });
+
+  it('shows an image preview after a file is selected and uploaded', async () => {
+    const uploadSpy = vi
+      .spyOn(api, 'post')
+      .mockResolvedValue({ data: { data: { url: '/uploads/newly-uploaded.png' } } });
+
+    render(<ProductForm onSubmit={vi.fn()} {...baseProps} />);
+
+    const file = new File(['dummy'], 'cake.png', { type: 'image/png' });
+    await userEvent.upload(screen.getByLabelText('Product Image'), file);
+
+    const preview = await screen.findByRole('img', { name: /product image preview/i });
+    expect(preview).toBeInTheDocument();
+    expect(preview).toHaveAttribute('src', '/uploads/newly-uploaded.png');
+    expect(uploadSpy).toHaveBeenCalledWith('/upload', expect.any(FormData), {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+    uploadSpy.mockRestore();
   });
 });

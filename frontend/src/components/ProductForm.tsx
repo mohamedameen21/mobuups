@@ -199,8 +199,15 @@ export function ProductForm({
           </p>
         )}
         {typeof currentImageUrl === 'string' && currentImageUrl !== '' && (
-          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-            <p>Uploaded image path: <span className="font-mono text-foreground">{currentImageUrl}</span></p>
+          <div className="mt-2 space-y-1">
+            <img
+              src={currentImageUrl}
+              alt="Product image preview"
+              className="size-32 rounded-md border object-cover"
+            />
+            <p className="text-xs text-muted-foreground">
+              Image path: <span className="font-mono text-foreground">{currentImageUrl}</span>
+            </p>
           </div>
         )}
       </div>
