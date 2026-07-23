@@ -51,8 +51,10 @@ services:
       dockerfile: Dockerfile
     container_name: product_store_frontend
     restart: always
-    ports:
-      - "${FRONTEND_PORT:-80}:80"
+    # Coolify's proxy publishes the configured domain. Keep Nginx internal so
+    # the Compose stack does not collide with the host's own port 80 listener.
+    expose:
+      - "80"
     depends_on:
       - backend
 
