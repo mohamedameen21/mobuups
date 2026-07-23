@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Search, ShieldCheck, PackageSearch } from 'lucide-react';
+import { Search, ShieldCheck, PackageSearch, FileText, ExternalLink } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -52,7 +52,7 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-5xl px-6 pb-20">
+        <section className="mx-auto max-w-5xl px-6 pb-16">
           <div className="grid gap-6 sm:grid-cols-3">
             {features.map(({ icon: Icon, title, description }) => (
               <Card key={title}>
@@ -64,6 +64,37 @@ export function HomePage() {
               </Card>
             ))}
           </div>
+        </section>
+
+        <section className="mx-auto max-w-5xl px-6 pb-20">
+          <a
+            href="/docs/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex flex-col items-start gap-4 rounded-xl border border-primary/30 bg-primary/5 p-6 transition-colors hover:border-primary hover:bg-primary/10 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-start gap-4">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <FileText className="size-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
+                  API Documentation
+                  <ExternalLink
+                    className="size-4 text-muted-foreground transition-colors group-hover:text-primary"
+                    aria-hidden="true"
+                  />
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Explore every endpoint interactively with the Swagger / OpenAPI UI - try requests
+                  live and inspect schemas.
+                </p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-transform group-hover:scale-[1.02]">
+              Open API docs
+            </span>
+          </a>
         </section>
       </main>
 
