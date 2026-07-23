@@ -16,13 +16,8 @@ interface ProductCardProps {
   isDeleting?: boolean;
 }
 
-const API_HOST = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') ?? 'http://localhost:4000';
-
 export function ProductCard({ product, canManage, onDelete, isDeleting }: ProductCardProps) {
-  const imageSrc =
-    product.imageUrl && product.imageUrl.startsWith('/')
-      ? `${API_HOST}${product.imageUrl}`
-      : product.imageUrl;
+  const imageSrc = product.imageUrl;
 
   return (
     <Card className="overflow-hidden py-0">
