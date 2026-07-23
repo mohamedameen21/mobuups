@@ -20,6 +20,10 @@ const swaggerSpec = JSON.parse(
 
 export const app = express();
 
+// Coolify/Nginx terminates the public connection before forwarding to Express.
+// Trust that single proxy hop so express-rate-limit uses the real client IP.
+app.set('trust proxy', 1);
+
 app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(
