@@ -1,7 +1,10 @@
 import axios, { type AxiosError } from 'axios';
 import type { User } from '../types/auth';
 
-const baseURL = import.meta.env.VITE_API_URL;
+// Vite replaces this at build time. Coolify does not inject frontend runtime
+// variables into the static Nginx bundle, so retain the same-origin API route
+// as a safe production default when no build-time value is supplied.
+const baseURL = import.meta.env.VITE_API_URL || '/api';
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
