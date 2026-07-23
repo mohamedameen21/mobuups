@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
@@ -17,6 +18,13 @@ import { uploadRouter } from './modules/upload/upload.routes.js';
 const swaggerSpec = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), 'src/swagger.json'), 'utf8')
 );
+// Swagger UI's generated init file embeds the API specification. Give that
+// file a content-based URL so a proxy/CDN cannot keep serving an older spec
+// after a deployment.
+const swaggerSpecVersion = createHash('sha256').update(JSON.stringify(swaggerSpec)).digest('hex').slice(0, 12);
+const swaggerHtml = swaggerUi
+  .generateHTML(swaggerSpec)
+  .replace('./swagger-ui-init.js', `./swagger-ui-init.js?v=${swaggerSpecVersion}`);
 
 export const app = express();
 
@@ -40,8 +48,15 @@ app.get('/', (_req, res) => {
   res.json({ status: 'ok', message: 'Product Store API (TypeScript)' });
 });
 
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+const serveSwaggerHtml = (_req: Request, res: Response) => {
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(swaggerHtml);
+};
+
+app.get(['/docs', '/docs/'], serveSwaggerHtml);
+app.get(['/api/docs', '/api/docs/'], serveSwaggerHtml);
+app.use('/docs', swaggerUi.serveFiles(swaggerSpec));
+app.use('/api/docs', swaggerUi.serveFiles(swaggerSpec));
 app.get('/api/swagger.json', (_req, res) => res.json(swaggerSpec));
 
 app.use('/api/auth', authRouter);
