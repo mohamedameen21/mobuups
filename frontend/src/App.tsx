@@ -26,7 +26,14 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
-      <Route path="/products" element={<ProductsPage />} />
+      <Route
+        path="/products"
+        element={
+          <RequireAuth>
+            <ProductsPage />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/products/new"
         element={

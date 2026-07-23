@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { PaginationBar, getPaginationItems } from './PaginationBar';
+import { PaginationBar } from './PaginationBar';
+import { getPaginationItems } from '../lib/pagination';
 
 describe('getPaginationItems', () => {
   it('returns exact array when totalPages <= 7', () => {
