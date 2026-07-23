@@ -8,10 +8,10 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { LoginForm } from '../components/LoginForm';
-import { useAuth } from '../context/AuthContext';
+import { RegisterForm } from '@/components/RegisterForm';
+import { useAuth } from '@/context/AuthContext';
 
-export function LoginPage() {
+export function RegisterPage() {
   const { user } = useAuth();
 
   if (user) return <Navigate to="/" replace />;
@@ -20,25 +20,21 @@ export function LoginPage() {
     <AuthLayout>
       <Card>
         <CardHeader>
-          <CardTitle>Log in</CardTitle>
-          <CardDescription>Welcome back - enter your details to continue.</CardDescription>
+          <CardTitle>Create an account</CardTitle>
+          <CardDescription>Sign up to start managing the product catalog.</CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <RegisterForm />
         </CardContent>
-        <CardFooter className="flex-col gap-2">
+        <CardFooter className="justify-center">
           <p className="text-sm text-muted-foreground">
-            No account?{' '}
+            Already have an account?{' '}
             <Link
-              to="/register"
+              to="/login"
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
-              Sign up
+              Log in
             </Link>
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Demo user: <span className="font-medium text-foreground">demouser@gmail.com</span> /{' '}
-            <span className="font-medium text-foreground">password</span>
           </p>
         </CardFooter>
       </Card>

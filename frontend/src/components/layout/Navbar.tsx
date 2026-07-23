@@ -9,10 +9,15 @@ export function Navbar() {
   return (
     <header className="border-b bg-background">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <Package className="size-5" aria-hidden="true" />
-          Product Store
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link to="/" className="flex items-center gap-2 font-semibold">
+            <Package className="size-5" aria-hidden="true" />
+            Product Store
+          </Link>
+          <Link to="/products" className="text-sm text-muted-foreground hover:text-foreground">
+            Products
+          </Link>
+        </div>
 
         {user ? (
           <div className="flex items-center gap-4">

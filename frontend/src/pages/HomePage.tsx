@@ -40,16 +40,16 @@ export function HomePage() {
             products - built for a real online store, not just a demo.
           </p>
 
-          {!user && (
-            <div className="mt-8 flex justify-center gap-3">
-              <Button size="lg" asChild>
+          <div className="mt-8 flex justify-center gap-3">
+            <Button size="lg" asChild>
+              <Link to="/products">Browse products</Link>
+            </Button>
+            {!user && (
+              <Button size="lg" variant="outline" asChild>
                 <Link to="/register">Get started</Link>
               </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/login">Log in</Link>
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
         </section>
 
         <section className="mx-auto max-w-5xl px-6 pb-20">

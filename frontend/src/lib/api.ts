@@ -17,6 +17,7 @@ export function setOnUserRefreshed(callback: ((user: User) => void) | null) {
 export const api = axios.create({
   baseURL,
   withCredentials: true,
+  timeout: 10000,
 });
 
 api.interceptors.request.use((config) => {

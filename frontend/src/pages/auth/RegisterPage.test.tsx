@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { RegisterPage } from './RegisterPage';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
-vi.mock('../context/AuthContext', () => ({
+vi.mock('@/context/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 

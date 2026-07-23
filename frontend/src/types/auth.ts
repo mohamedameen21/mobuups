@@ -21,6 +21,7 @@ export interface LoginInput {
 export interface AuthResponse {
   user: User;
   accessToken: string;
+  refreshToken?: string;
 }
 
 // Matches the { success, data, error } envelope every backend response uses
