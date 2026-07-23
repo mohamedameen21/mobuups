@@ -36,7 +36,7 @@ describe('POST /api/auth/register', () => {
     expect(setCookie).toContain('refreshToken=');
     expect(setCookie).toContain('HttpOnly');
     expect(setCookie).toContain('Path=/');
-    expect(setCookie).toContain('SameSite=Lax');
+    expect(setCookie).toContain('SameSite=Strict');
   });
 
   it('normalizes email to lowercase before storing', async () => {

@@ -66,6 +66,19 @@ describe('POST /api/upload', () => {
     expect(res.body.error.code).toBe('INVALID_FILE_TYPE');
   });
 
+  it('rejects SVG file uploads with 400 to prevent Stored XSS', async () => {
+    const token = await getAccessToken();
+    const testBuffer = Buffer.from('<svg><script>alert(1)</script></svg>');
+
+    const res = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('image', testBuffer, { filename: 'evil.svg', contentType: 'image/svg+xml' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('INVALID_FILE_TYPE');
+  });
+
   it('rejects missing image attachment field with 400', async () => {
     const token = await getAccessToken();
 

@@ -23,7 +23,6 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/png',
   'image/webp',
   'image/gif',
-  'image/svg+xml',
 ]);
 
 export const uploadMiddleware = multer({
@@ -33,7 +32,7 @@ export const uploadMiddleware = multer({
     if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new AppError(400, 'INVALID_FILE_TYPE', 'Only image files (JPG, PNG, WEBP, GIF, SVG) are allowed.'));
+      cb(new AppError(400, 'INVALID_FILE_TYPE', 'Only raster image files (JPG, PNG, WEBP, GIF) are allowed.'));
     }
   },
 }).single('image');

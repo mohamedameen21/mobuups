@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
+import helmet from 'helmet';
 import { ZodError } from 'zod';
 import { AppError } from './lib/errors.js';
 import { logError } from './lib/logger.js';
@@ -19,10 +20,7 @@ const swaggerSpec = JSON.parse(
 
 export const app = express();
 
-app.use((req, res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.url}`);
-  next();
-});
+app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(
   cors({
@@ -45,8 +43,6 @@ app.get('/api/swagger.json', (_req, res) => res.json(swaggerSpec));
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/upload', uploadRouter);
-
-
 
 app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
   if (err instanceof AppError) {
