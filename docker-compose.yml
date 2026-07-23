@@ -32,8 +32,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@db:5432/${POSTGRES_DB:-mobupps_db}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-super-secret-access-token-key-change-in-prod-12345}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
-    ports:
-      - "${BACKEND_PORT:-4000}:4000"
+    # Internal-only: reachable by the frontend (Nginx) over the Docker network
+    # as `http://backend:4000`, but NOT published to the host/internet.
+    # All external traffic flows through the frontend container's Nginx proxy.
+    expose:
+      - "4000"
     volumes:
       - uploads_data:/app/uploads
     depends_on:
